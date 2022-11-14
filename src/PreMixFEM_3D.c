@@ -3,6 +3,7 @@
 #include "petscdmda.h"
 #include "petscdmdatypes.h"
 #include "petscerror.h"
+#include "petsclog.h"
 #include "petscmat.h"
 #include "petscsys.h"
 #include "petscsystypes.h"
@@ -50,7 +51,7 @@ PetscErrorCode PC_init(PCCtx **init_ctx, PetscScalar *dom, PetscInt *mesh, Petsc
   // If oversampling=1, DMDA has a ghost point width=1 now, and this will change the construction of A_i in level-1.
   PetscCall(DMSetUp(s_ctx->dm));
 
-  PetscInt m, n, p, i, coarse_elem_p_num, coarse_total_nx, coarse_total_ny, coarse_total_nz;
+  PetscInt m, n, p, i, coarse_elem_p_num;
   for (i = 0; i < DIM; ++i)
     PetscCall(DMCreateGlobalVector(s_ctx->dm, &(s_ctx->kappa[i])));
   PetscCall(DMDAGetInfo(s_ctx->dm, NULL, NULL, NULL, NULL, &m, &n, &p, NULL, NULL, NULL, NULL, NULL, NULL));
@@ -59,19 +60,7 @@ PetscErrorCode PC_init(PCCtx **init_ctx, PetscScalar *dom, PetscInt *mesh, Petsc
     PetscCall(PetscPrintf(PETSC_COMM_WORLD, "The subdomain may not be proper (too long/wide/high), reset subdomain from %d to 2.\n", s_ctx->sub_domains));
     s_ctx->sub_domains = 2;
   }
-  PetscInt lx[m], ly[n], lz[p];
-  for (i = 0; i < m; ++i)
-    lx[i] = s_ctx->sub_domains;
-  for (i = 0; i < n; ++i)
-    ly[i] = s_ctx->sub_domains;
-  for (i = 0; i < p; ++i)
-    lz[i] = s_ctx->sub_domains;
   coarse_elem_p_num = s_ctx->sub_domains * s_ctx->sub_domains * s_ctx->sub_domains;
-  coarse_total_nx = s_ctx->sub_domains * m;
-  coarse_total_ny = s_ctx->sub_domains * n;
-  coarse_total_nz = s_ctx->sub_domains * p;
-  PetscCall(DMDACreate3d(PETSC_COMM_WORLD, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX, coarse_total_nx, coarse_total_ny, coarse_total_nz, m, n, p, s_ctx->max_eigen_num_lv1, 1, lx, ly, lz, &(s_ctx->dm_c)));
-  PetscCall(DMSetUp(s_ctx->dm_c));
 
   PetscCall(PetscMalloc1(coarse_elem_p_num, &s_ctx->eigen_num_lv1));
   PetscCall(PetscMalloc1(coarse_elem_p_num, &s_ctx->eigen_max_lv1));
@@ -286,10 +275,9 @@ PetscErrorCode PC_setup(PC pc) {
   *********************************************************************/
   Mat A_i_inner, M_i;
   Vec diag_M_i;
-  PetscInt dof;
   PetscScalar ***arr_ms_bases_loc, ***arr_M_i_3d;
-  for (dof = 0; dof < s_ctx->max_eigen_num_lv1; ++dof) {
-    PetscCall(DMCreateLocalVector(s_ctx->dm, &(s_ctx->ms_bases[dof])));
+  for (i = 0; i < s_ctx->max_eigen_num_lv1; ++i) {
+    PetscCall(DMCreateLocalVector(s_ctx->dm, &(s_ctx->ms_bases[i])));
   }
 
   for (coarse_elem_p = 0; coarse_elem_p < coarse_elem_p_num; ++coarse_elem_p) {
@@ -438,9 +426,9 @@ PetscErrorCode PC_setup(PC pc) {
 
   Vec dummy_ms_bases_glo;
   PetscCall(DMCreateGlobalVector(s_ctx->dm, &dummy_ms_bases_glo));
-  for (dof = 0; dof < s_ctx->max_eigen_num_lv1; ++dof) {
-    PetscCall(DMLocalToGlobal(s_ctx->dm, s_ctx->ms_bases[dof], INSERT_VALUES, dummy_ms_bases_glo));
-    PetscCall(DMGlobalToLocal(s_ctx->dm, dummy_ms_bases_glo, INSERT_VALUES, s_ctx->ms_bases[dof]));
+  for (i = 0; i < s_ctx->max_eigen_num_lv1; ++i) {
+    PetscCall(DMLocalToGlobal(s_ctx->dm, s_ctx->ms_bases[i], INSERT_VALUES, dummy_ms_bases_glo));
+    PetscCall(DMGlobalToLocal(s_ctx->dm, dummy_ms_bases_glo, INSERT_VALUES, s_ctx->ms_bases[i]));
   }
   PetscCall(VecDestroy(&dummy_ms_bases_glo));
 
@@ -618,6 +606,9 @@ PetscErrorCode PC_setup(PC pc) {
   /*********************************************************************
     Get eigenvectors lever-2.
   *********************************************************************/
+  Vec ms_bases_tmp;
+  PetscScalar ***arr_ms_bases_tmp;
+  PetscCall(DMGetLocalVector(s_ctx->dm, &ms_bases_tmp));
   PetscCall(MatCreateSeqAIJ(PETSC_COMM_SELF, dof_idx[coarse_elem_p_num], dof_idx[coarse_elem_p_num], 7 * s_ctx->max_eigen_num_lv1, NULL, &A_i_inner));
   for (coarse_elem_p = 0; coarse_elem_p < coarse_elem_p_num; ++coarse_elem_p) {
     coarse_elem_p_x = coarse_elem_p % s_ctx->sub_domains;
@@ -765,13 +756,13 @@ PetscErrorCode PC_setup(PC pc) {
   PetscCall(MatAssemblyEnd(A_i_inner, MAT_FINAL_ASSEMBLY));
   PetscCall(MatSetOption(A_i_inner, MAT_SYMMETRIC, PETSC_TRUE));
 
-  s_ctx->eigen_vec_lv2 = (Vec *)malloc(s_ctx->max_eigen_num_lv2 * sizeof(Vec));
+  s_ctx->ms_bases_c = (Vec *)malloc(s_ctx->max_eigen_num_lv2 * sizeof(Vec));
   for (i = 0; i < s_ctx->max_eigen_num_lv2; ++i)
-    PetscCall(DMCreateLocalVector(s_ctx->dm_c, &s_ctx->eigen_vec_lv2[i]));
+    PetscCall(DMCreateLocalVector(s_ctx->dm, &s_ctx->ms_bases_c[i]));
 
   EPS eps;
   PetscInt nconv;
-  PetscScalar eig_val, *arr_eig_vec, ****arr_eigen_vec_lv2;
+  PetscScalar eig_val, *arr_eig_vec, ****arr_ms_bases_c;
   Vec eig_vec;
 
   PetscCall(EPSCreate(PETSC_COMM_SELF, &eps));
@@ -803,35 +794,81 @@ PetscErrorCode PC_setup(PC pc) {
       s_ctx->eigen_num_lv2 = s_ctx->max_eigen_num_lv1;
       s_ctx->eigen_max_lv2 = eig_val;
     }
-
     PetscCall(VecGetArray(eig_vec, &arr_eig_vec));
-    PetscCall(DMDAVecGetArrayDOF(s_ctx->dm_c, s_ctx->eigen_vec_lv2[j], &arr_eigen_vec_lv2));
+    // Construct coarse-coarse bases in the original P space.
+    PetscCall(DMDAVecGetArray(s_ctx->dm, s_ctx->ms_bases_c[j], &arr_ms_bases_c));
+
     for (coarse_elem_p = 0; coarse_elem_p < coarse_elem_p_num; ++coarse_elem_p) {
       coarse_elem_p_x = coarse_elem_p % s_ctx->sub_domains;
       coarse_elem_p_y = (coarse_elem_p / s_ctx->sub_domains) % s_ctx->sub_domains;
       coarse_elem_p_z = coarse_elem_p / (s_ctx->sub_domains * s_ctx->sub_domains);
-      for (i = 0; i < s_ctx->eigen_num_lv1[coarse_elem_p]; ++i)
-        arr_eigen_vec_lv2[coarse_elem_p_z][coarse_elem_p_y][coarse_elem_p_x][i] = arr_eig_vec[dof_idx[coarse_elem_p] + i];
+
+      // Insert data into ms_bases_c.
+      PetscCall(VecZeroEntries(ms_bases_tmp));
+      PetscCall(VecMAXPY(ms_bases_tmp, s_ctx->eigen_num_lv1[coarse_elem_p], &arr_eig_vec[dof_idx[coarse_elem_p]], &s_ctx->ms_bases[0]));
+      PetscCall(DMDAVecGetArray(s_ctx->dm, ms_bases_tmp, &arr_ms_bases_tmp));
+      startx_ = s_ctx->coarse_startx[coarse_elem_p_x];
+      nx_ = s_ctx->coarse_lenx[coarse_elem_p_x];
+      starty_ = s_ctx->coarse_starty[coarse_elem_p_y];
+      ny_ = s_ctx->coarse_leny[coarse_elem_p_y];
+      startz_ = s_ctx->coarse_startz[coarse_elem_p_z];
+      nz_ = s_ctx->coarse_lenz[coarse_elem_p_z];
+      for (ez = startz_; ez < startz_ + nz_; ++ez)
+        for (ey = starty_; ey < starty_ + ny_; ++ey)
+          PetscCall(PetscArraycpy(&arr_ms_bases_c[ez][ey][ex], &arr_ms_bases_tmp[ez][ey][ex], nx_));
+      PetscCall(DMDAVecRestoreArray(s_ctx->dm, ms_bases_tmp, &arr_ms_bases_tmp));
     }
-    PetscCall(DMDAVecRestoreArrayDOF(s_ctx->dm_c, s_ctx->eigen_vec_lv2[j], &arr_eigen_vec_lv2));
     PetscCall(VecRestoreArray(eig_vec, &arr_eig_vec));
   }
+  dof_idx[coarse_elem_p_num + 1] = s_ctx->eigen_num_lv2;
   // Do some cleaning.
   PetscCall(VecDestroy(&eig_vec));
   PetscCall(EPSDestroy(&eps));
   PetscCall(MatDestroy(&A_i_inner));
 
-  Vec eigen_vec_lv2_glo;
-  PetscCall(DMCreateGlobalVector(s_ctx->dm_c, &eigen_vec_lv2_glo));
-  for (dof = 0; dof < s_ctx->max_eigen_num_lv2; ++dof) {
-    PetscCall(DMLocalToGlobal(s_ctx->dm, s_ctx->eigen_vec_lv2[dof], INSERT_VALUES, eigen_vec_lv2_glo));
-    PetscCall(DMGlobalToLocal(s_ctx->dm, eigen_vec_lv2_glo, INSERT_VALUES, s_ctx->eigen_vec_lv2[dof]));
+  PetscCall(DMCreateGlobalVector(s_ctx->dm, &dummy_ms_bases_glo));
+  for (i = 0; i < s_ctx->max_eigen_num_lv2; ++i) {
+    PetscCall(DMLocalToGlobal(s_ctx->dm, s_ctx->ms_bases_c[i], INSERT_VALUES, dummy_ms_bases_glo));
+    PetscCall(DMGlobalToLocal(s_ctx->dm, dummy_ms_bases_glo, INSERT_VALUES, s_ctx->ms_bases_c[i]));
   }
   PetscCall(VecDestroy(&dummy_ms_bases_glo));
 
   /*********************************************************************
     Get level-3.
   *********************************************************************/
+  Mat A_cc;
+  PetscCall(MatCreateAIJ(PETSC_COMM_WORLD, s_ctx->eigen_num_lv2, s_ctx->eigen_num_lv2, PETSC_DETERMINE, PETSC_DETERMINE, s_ctx->eigen_num_lv2, NULL, 6 * s_ctx->max_eigen_num_lv2, NULL, &A_cc));
+  PetscInt A_cc_range[NEIGH + 1][2];
+  PetscCall(MatGetOwnershipRange(A_cc, &A_cc_range[0][0], &A_cc_range[0][1]));
+  const PetscMPIInt *ng_ranks;
+  PetscCall(DMDAGetNeighbors(s_ctx->dm, &ng_ranks));
+  // Send dof_idx first.
+  if (proc_startx != 0)
+    PetscCallMPI(MPI_Send(&A_cc_range[0][0], 2, MPI_INT, ng_ranks[12], ng_ranks[13], PETSC_COMM_WORLD)); // Left.
+  if (proc_startx + proc_nx != s_ctx->M)
+    PetscCallMPI(MPI_Send(&A_cc_range[0][0], 2, MPI_INT, ng_ranks[14], ng_ranks[13], PETSC_COMM_WORLD)); // Right.
+  if (proc_starty != 0)
+    PetscCallMPI(MPI_Send(&A_cc_range[0][0], 2, MPI_INT, ng_ranks[10], ng_ranks[13], PETSC_COMM_WORLD)); // Down.
+  if (proc_starty + proc_ny != s_ctx->N)
+    PetscCallMPI(MPI_Send(&A_cc_range[0][0], 2, MPI_INT, ng_ranks[16], ng_ranks[13], PETSC_COMM_WORLD)); // Up.
+  if (proc_startz != 0)
+    PetscCallMPI(MPI_Send(&A_cc_range[0][0], 2, MPI_INT, ng_ranks[4], ng_ranks[13], PETSC_COMM_WORLD)); // Back.
+  if (proc_startz + proc_nz != s_ctx->P)
+    PetscCallMPI(MPI_Send(&A_cc_range[0][0], 2, MPI_INT, ng_ranks[26], ng_ranks[13], PETSC_COMM_WORLD)); // Front.
+  // Receive dof_idx then.
+  MPI_Status ista;
+  if (proc_startx != 0)
+    PetscCallMPI(MPI_Recv(&A_cc_range[1][0], 2, MPI_INT, ng_ranks[12], ng_ranks[12], PETSC_COMM_WORLD, &ista)); // Left.
+  if (proc_startx + proc_nx != s_ctx->M)
+    PetscCallMPI(MPI_Recv(&A_cc_range[2][0], 2, MPI_INT, ng_ranks[14], ng_ranks[14], PETSC_COMM_WORLD, &ista)); // Right.
+  if (proc_starty != 0)
+    PetscCallMPI(MPI_Recv(&A_cc_range[3][0], 2, MPI_INT, ng_ranks[10], ng_ranks[10], PETSC_COMM_WORLD, &ista)); // Down.
+  if (proc_starty + proc_ny != s_ctx->N)
+    PetscCallMPI(MPI_Recv(&A_cc_range[4][0], 2, MPI_INT, ng_ranks[16], ng_ranks[16], PETSC_COMM_WORLD, &ista)); // Up.
+  if (proc_startz != 0)
+    PetscCallMPI(MPI_Recv(&A_cc_range[5][0], 2, MPI_INT, ng_ranks[4], ng_ranks[4], PETSC_COMM_WORLD, &ista)); // Back.
+  if (proc_startz + proc_nz != s_ctx->P)
+    PetscCallMPI(MPI_Recv(&A_cc_range[6][0], 2, MPI_INT, ng_ranks[22], ng_ranks[22], PETSC_COMM_WORLD, &ista)); // Front.
 
   PetscFunctionReturn(0);
 }

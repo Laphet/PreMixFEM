@@ -3,14 +3,15 @@
 
 #include "petscsystypes.h"
 #define DIM 3
+#define NEIGH 6
 #define NIL 1.0e-12
 #include <petscdmda.h>
 #include <petscksp.h>
 #include <slepceps.h>
 
 typedef struct PC_Context {
-  DM dm, dm_c;
-  Vec kappa[DIM], *ms_bases, *eigen_vec_lv2;
+  DM dm;
+  Vec kappa[DIM], *ms_bases, *ms_bases_c;
   KSP *ksp_lv1, ksp_lv2, ksp_lv3;
   PetscInt *coarse_startx, *coarse_lenx, *coarse_starty, *coarse_leny, *coarse_startz, *coarse_lenz;
   PetscInt *coarse_p_startx, *coarse_p_lenx, *coarse_p_starty, *coarse_p_leny, *coarse_p_startz, *coarse_p_lenz;
