@@ -2,12 +2,13 @@
 #define YCQ_MIXFEM_3L3D_H
 
 #include "petscsystypes.h"
-#define DIM 3
-#define NEIGH 6
-#define NIL 1.0e-12
 #include <petscdmda.h>
 #include <petscksp.h>
 #include <slepceps.h>
+
+#define DIM 3
+#define NEIGH 6
+#define NIL 1.0e-12
 
 typedef struct PC_Context {
   DM dm;
@@ -15,7 +16,7 @@ typedef struct PC_Context {
   KSP *ksp_lv1, ksp_lv2, ksp_lv3;
   PetscInt *coarse_startx, *coarse_lenx, *coarse_starty, *coarse_leny, *coarse_startz, *coarse_lenz;
   PetscInt *coarse_p_startx, *coarse_p_lenx, *coarse_p_starty, *coarse_p_leny, *coarse_p_startz, *coarse_p_lenz;
-  PetscInt over_sampling, sub_domains, max_eigen_num_lv1, *eigen_num_lv1, max_eigen_num_lv2, eigen_num_lv2, M, N, P;
+  PetscInt over_sampling, sub_domains, max_eigen_num_lv1, max_eigen_num_lv1_upd, *eigen_num_lv1, max_eigen_num_lv2, max_eigen_num_lv2_upd, eigen_num_lv2, M, N, P;
   PetscScalar H_x, H_y, H_z, L, W, H, *eigen_max_lv1, *eigen_min_lv1, eigen_bd_lv1, eigen_max_lv2, eigen_min_lv2, eigen_bd_lv2;
 } PCCtx;
 
@@ -32,6 +33,8 @@ PetscErrorCode PC_init(PCCtx **init_ctx, PetscScalar *dom, PetscInt *mesh, Petsc
 */
 
 PetscErrorCode PC_setup(PC pc);
+
+PetscErrorCode PC_setup_lite(PC pc);
 
 PetscErrorCode PC_final_default(PCCtx **s_ctx_);
 
