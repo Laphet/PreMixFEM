@@ -20,7 +20,7 @@ typedef struct PC_Context {
   PetscScalar H_x, H_y, H_z, L, W, H, *eigen_max_lv1, *eigen_min_lv1, eigen_bd_lv1, eigen_max_lv2, eigen_min_lv2, eigen_bd_lv2;
 } PCCtx;
 
-PetscErrorCode PC_init(PCCtx **init_ctx, PetscScalar *dom, PetscInt *mesh, PetscScalar *fl_args, PetscInt *int_args, PetscBool *b_args);
+PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh, PetscScalar *fl_args, PetscInt *int_args, PetscBool *b_args);
 /*
     dom[0], the length; dom[1], the width; dom[2], the height.
     mesh[0], partions in x-direction; mesh[1], partions in y-direction; mesh[2], partions in z-direction.
@@ -34,10 +34,10 @@ PetscErrorCode PC_init(PCCtx **init_ctx, PetscScalar *dom, PetscInt *mesh, Petsc
 
 PetscErrorCode PC_setup(PC pc);
 
-PetscErrorCode PC_setup_lite(PC pc);
+PetscErrorCode PC_apply_vec(PC pc, Vec x, Vec y);
 
-PetscErrorCode PC_final_default(PCCtx **s_ctx_);
+PetscErrorCode PC_final_default(PCCtx *s_ctx);
 
-PetscErrorCode PC_final(PCCtx **s_ctx_);
+PetscErrorCode PC_final(PCCtx *s_ctx);
 
 #endif
