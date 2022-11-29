@@ -1,6 +1,7 @@
 #ifndef YCQ_MIXFEM_3L3D_H
 #define YCQ_MIXFEM_3L3D_H
 
+#include "petscmat.h"
 #include "petscsystypes.h"
 #include <petscdmda.h>
 #include <petscksp.h>
@@ -9,6 +10,14 @@
 #define DIM 3
 #define NEIGH 6
 #define NIL 1.0e-12
+#define MAX_LOG_STATES 7
+#define STAGE_SU_LV1 0
+#define STAGE_SU_LV2 1
+#define STAGE_SU_LV3 2
+#define STAGE_AV_LV1 3
+#define STAGE_AV_LV2 4
+#define STAGE_AV_LV3 5
+#define STAGE_AV 6
 
 typedef struct PC_Context {
   DM dm;
@@ -18,6 +27,7 @@ typedef struct PC_Context {
   PetscInt *coarse_p_startx, *coarse_p_lenx, *coarse_p_starty, *coarse_p_leny, *coarse_p_startz, *coarse_p_lenz;
   PetscInt over_sampling, sub_domains, max_eigen_num_lv1, max_eigen_num_lv1_upd, *eigen_num_lv1, max_eigen_num_lv2, max_eigen_num_lv2_upd, eigen_num_lv2, M, N, P;
   PetscScalar H_x, H_y, H_z, L, W, H, *eigen_max_lv1, *eigen_min_lv1, eigen_bd_lv1, eigen_max_lv2, eigen_min_lv2, eigen_bd_lv2;
+  PetscLogDouble t_stages[MAX_LOG_STATES];
 } PCCtx;
 
 PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh, PetscScalar *fl_args, PetscInt *int_args, PetscBool *b_args);
@@ -32,9 +42,17 @@ PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh, PetscScal
     int_args[3], the number of eigenvectors solved level2.
 */
 
+PetscErrorCode PC_print_info(PCCtx *s_ctx);
+
 PetscErrorCode PC_setup(PC pc);
 
+PetscErrorCode PC_create_A(PCCtx *s_ctx, Mat *A);
+
 PetscErrorCode PC_apply_vec(PC pc, Vec x, Vec y);
+
+PetscErrorCode PC_get_range(const void *sendbuff, void *recvbuff, MPI_Datatype datatype);
+
+PetscErrorCode PC_print_stat(PCCtx *s_ctx);
 
 PetscErrorCode PC_final_default(PCCtx *s_ctx);
 
