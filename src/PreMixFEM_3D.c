@@ -1230,7 +1230,6 @@ PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh, PetscScal
     fl_args[1] = 1.0 / NIL;
   }
 
-  //   PCCtx *s_ctx = *init_ctx;
   s_ctx->L = dom[0];
   s_ctx->W = dom[1];
   s_ctx->H = dom[2];
@@ -1255,8 +1254,6 @@ PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh, PetscScal
 
   PetscInt m, n, p, coarse_elem_p_num;
   // Users should be responsible for constructing kappa.
-  //   for (i = 0; i < DIM; ++i)
-  //     PetscCall(DMCreateGlobalVector(s_ctx->dm, &(s_ctx->kappa[i])));
   PetscCall(DMDAGetInfo(s_ctx->dm, NULL, NULL, NULL, NULL, &m, &n, &p, NULL, NULL, NULL, NULL, NULL, NULL));
   if ((m == 1 || n == 1 || p == 1) && s_ctx->sub_domains == 1) {
     PetscCall(PetscPrintf(PETSC_COMM_WORLD, "The subdomain may not be proper (too long/wide/high), reset sub_domains from %d to 2.\n", s_ctx->sub_domains));
@@ -1292,7 +1289,6 @@ PetscErrorCode PC_print_info(PCCtx *s_ctx) {
   PetscInt m, n, p;
   PetscCall(DMDAGetInfo(s_ctx->dm, NULL, NULL, NULL, NULL, &m, &n, &p, NULL, NULL, NULL, NULL, NULL, NULL));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "MPI Processes in each direction: X=%d, Y=%d, Z=%d.\n", m, n, p));
-  // PetscCall(PetscPrintf(PETSC_COMM_WORLD, "over_sampling=%d, sub_domains=%d.\n", s_ctx->over_sampling, s_ctx->sub_domains));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "max_eigen_num_lv1=%d, eigen_bd_lv1=%.5f\n", s_ctx->max_eigen_num_lv1, s_ctx->eigen_bd_lv1));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "max_eigen_num_lv2=%d, eigen_bd_lv2=%.5f\n", s_ctx->max_eigen_num_lv2, s_ctx->eigen_bd_lv2));
   PetscFunctionReturn(0);
@@ -1481,7 +1477,6 @@ PetscErrorCode PC_print_stat(PCCtx *s_ctx) {
 
 PetscErrorCode PC_final(PCCtx *s_ctx) {
   PetscFunctionBeginUser;
-  //   PCCtx *s_ctx = *s_ctx_;
   PetscInt i, coarse_elem_p_num = s_ctx->sub_domains * s_ctx->sub_domains * s_ctx->sub_domains;
 
   for (i = 0; i < s_ctx->max_eigen_num_lv1_upd; ++i)
@@ -1506,7 +1501,6 @@ PetscErrorCode PC_final(PCCtx *s_ctx) {
 
 PetscErrorCode PC_final_default(PCCtx *s_ctx) {
   PetscFunctionBeginUser;
-  //   PCCtx *s_ctx = *s_ctx_;
 
   PetscCall(DMDestroy(&s_ctx->dm));
   free(s_ctx->ms_bases_c);
