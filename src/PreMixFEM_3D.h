@@ -19,15 +19,15 @@
 #define STAGE_AV_LV3 5
 #define STAGE_AV 6
 
-typedef struct PC_Context {
+typedef struct preconditioner_context {
   DM dm;
-  Vec kappa[DIM], *ms_bases, *ms_bases_c;
+  Vec kappa[DIM], *ms_bases_c, *ms_bases_cc;
   KSP *ksp_lv1, ksp_lv2, ksp_lv3;
   PetscInt *coarse_startx, *coarse_lenx, *coarse_starty, *coarse_leny, *coarse_startz, *coarse_lenz;
-  PetscInt *coarse_p_startx, *coarse_p_lenx, *coarse_p_starty, *coarse_p_leny, *coarse_p_startz, *coarse_p_lenz;
-  PetscInt over_sampling, sub_domains, max_eigen_num_lv1, max_eigen_num_lv1_upd, *eigen_num_lv1, max_eigen_num_lv2, max_eigen_num_lv2_upd, eigen_num_lv2, M, N, P;
+  PetscInt sub_domains, max_eigen_num_lv1, max_eigen_num_lv1_upd, *eigen_num_lv1, max_eigen_num_lv2, max_eigen_num_lv2_upd, eigen_num_lv2, M, N, P;
   PetscScalar H_x, H_y, H_z, L, W, H, *eigen_max_lv1, *eigen_min_lv1, eigen_bd_lv1, eigen_max_lv2, eigen_min_lv2, eigen_bd_lv2;
   PetscLogDouble t_stages[MAX_LOG_STATES];
+  PetscBool use_W_cycle;
 } PCCtx;
 
 PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh, PetscScalar *fl_args, PetscInt *int_args, PetscBool *b_args);
@@ -40,9 +40,12 @@ PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh, PetscScal
     int_args[1], the number of subdomains in each direction.
     int_args[2], the number of eigenvectors solved level1.
     int_args[3], the number of eigenvectors solved level2.
+    b_args[0], use W-cycle instead of default V-cycle.
 */
 
 PetscErrorCode PC_print_info(PCCtx *s_ctx);
+
+PetscErrorCode _PC_setup(PCCtx *s_ctx);
 
 PetscErrorCode PC_setup(PC pc);
 
