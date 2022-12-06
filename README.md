@@ -43,6 +43,7 @@ Note if set '-Ofast' for ifort, the compiling of ScaLAPACK is extremely slow.
 The net connection is blocked, several packages need to be downloaded.
 
 module load mpi/oneapimpi-oneapi-2021.1.1
+
 module load apps/mkl-oneapi-2021
 
 ./configure PETSC_ARCH=linux-oneAPI-opt --with-debugging=0 \
@@ -75,7 +76,3 @@ Try this command (from https://gist.github.com/v1j4y/d1c3246c7ae764c0165f104d013
 mpiexec -n 8 valgrind --tool=memcheck -q --num-callers=20 --track-origins=yes --log-file=valgrind.log.%p --dsymutil=yes ./test -malloc off inpfile
 
 Thanks!
-
-
-
-
