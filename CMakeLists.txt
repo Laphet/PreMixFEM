@@ -15,10 +15,12 @@
 cmake_minimum_required(VERSION 3.1.0)
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+# Use verbose output.
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # set root of location to find PETSc's pkg-config
-set(ENV{PETSC_DIR} "/home/cqye/petsc")
-set(ENV{PETSC_ARCH} "linux-gcc-debug")
+# set(ENV{PETSC_DIR} "/home/cqye/petsc")
+# set(ENV{PETSC_ARCH} "linux-gcc-debug")
 set(PETSC $ENV{PETSC_DIR}/$ENV{PETSC_ARCH})
 set(ENV{PKG_CONFIG_PATH} ${PETSC}/lib/pkgconfig)
 
@@ -35,22 +37,33 @@ if (FORTRAN_COMPILER)
   enable_language(Fortran)
 endif (FORTRAN_COMPILER)
 
+# Get flags from PETSc.pc
+execute_process ( COMMAND pkg-config PETSc --variable=cflags_extra COMMAND tr -d '\n' OUTPUT_VARIABLE C_FLAGS)
+SET(CMAKE_C_FLAGS ${C_FLAGS})
+execute_process ( COMMAND pkg-config PETSc --variable=cxxflags_extra COMMAND tr -d '\n' OUTPUT_VARIABLE CXX_FLAGS)
+if (CXX_FLAGS)
+  SET(CMAKE_CXX_FLAGS ${CXX_FLAGS})
+endif (CXX_FLAGS)
+
 #  tells CMake to build the application ex1 from the source file ex1.c
 #  this must appear AFTER the compilers are set
 project(PreMixFEM)
 set(SOURCES 
-  src/test.c
+  src/Expe_scal.c
   src/PreMixFEM_3D.c
 )
-add_executable(test ${SOURCES})
-target_include_directories(test
+SET(OUTPUT_NAME Expe_scal)
+add_executable(${OUTPUT_NAME} ${SOURCES})
+target_include_directories(${OUTPUT_NAME}
   PRIVATE
   ${PROJECT_SOURCE_DIR}/src
 )
 find_package(PkgConfig REQUIRED)
 pkg_search_module(PETSC REQUIRED IMPORTED_TARGET PETSc)
+pkg_search_module(SLEPC REQUIRED IMPORTED_TARGET slepc)
+
 #  Learned from https://stackoverflow.com/questions/8774593/cmake-link-to-external-library
 #  Thanks!
-add_library(slepc SHARED IMPORTED)
-set_target_properties(slepc PROPERTIES IMPORTED_LOCATION ${PETSC}/lib/libslepc.so)
-target_link_libraries(test PkgConfig::PETSC slepc)
+# add_library(slepc SHARED IMPORTED)
+# set_target_properties(slepc PROPERTIES IMPORTED_LOCATION ${PETSC}/lib/libslepc.so)
+target_link_libraries(${OUTPUT_NAME} PkgConfig::PETSC PkgConfig::SLEPC)

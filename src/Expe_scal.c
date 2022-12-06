@@ -1,17 +1,42 @@
 #include "PreMixFEM_3D.h"
 #include <petscdmda.h>
+#include <petscmath.h>
+#include <petscvec.h>
 #include <slepceps.h>
 
 #define MAX_ARGS 24
+#define CELL_LEN 8
 
-PetscErrorCode create_Laplace_kappa(PCCtx *s_ctx) {
+PetscErrorCode create_cross_kappa(PCCtx *s_ctx, PetscInt cr) {
   PetscFunctionBeginUser;
-  PetscCall(DMCreateGlobalVector(s_ctx->dm, &s_ctx->kappa[0]));
-  PetscCall(DMCreateGlobalVector(s_ctx->dm, &s_ctx->kappa[1]));
-  PetscCall(DMCreateGlobalVector(s_ctx->dm, &s_ctx->kappa[2]));
-  PetscCall(VecSet(s_ctx->kappa[0], 2.0));
-  PetscCall(VecSet(s_ctx->kappa[1], 1.0));
-  PetscCall(VecSet(s_ctx->kappa[2], 0.5));
+  PetscInt startx, nx, ex, ex_r, starty, ny, ey, ey_r, startz, nz, ez, ez_r, i;
+  PetscCall(DMDAGetCorners(s_ctx->dm, &startx, &starty, &startz, &nx, &ny, &nz));
+  PetscScalar ***arr_kappa_array[DIM];
+  for (i = 0; i < DIM; ++i) {
+    PetscCall(DMCreateGlobalVector(s_ctx->dm, &s_ctx->kappa[i]));
+    PetscCall(DMDAVecGetArray(s_ctx->dm, s_ctx->kappa[i], &arr_kappa_array[i]));
+  }
+  for (ez = startz; ez < startz + nz; ++ez) {
+    ez_r = ez % CELL_LEN;
+    for (ey = starty; ey < starty + ny; ++ey) {
+      ey_r = ey % CELL_LEN;
+      for (ex = startx; ex < startx + nx; ++ex) {
+        ex_r = ex % CELL_LEN;
+        if ((ex_r >= 3 && ex_r < 5 && ey_r >= 3 && ey_r < 5) || (ex_r >= 3 && ex_r < 5 && ez_r >= 3 && ez_r < 5) || (ey_r >= 3 && ey_r < 5 && ez_r >= 3 && ez_r < 5)) {
+          arr_kappa_array[0][ez][ey][ex] = PetscPowInt(10.0, cr);
+          arr_kappa_array[1][ez][ey][ex] = PetscPowInt(5.0, cr);
+          arr_kappa_array[2][ez][ey][ex] = PetscPowInt(2.0, cr);
+        } else {
+          arr_kappa_array[0][ez][ey][ex] = 1.0;
+          arr_kappa_array[1][ez][ey][ex] = 1.0;
+          arr_kappa_array[2][ez][ey][ex] = 1.0;
+        }
+      }
+    }
+  }
+  for (i = 0; i < DIM; ++i)
+    PetscCall(DMDAVecRestoreArray(s_ctx->dm, s_ctx->kappa[i], &arr_kappa_array[i]));
+
   PetscFunctionReturn(0);
 }
 
@@ -38,26 +63,28 @@ PetscErrorCode create_well_source_XxY_rhs(PCCtx *s_ctx, Vec *rhs) {
 }
 
 int main(int argc, char **argv) {
-  PetscCall(SlepcInitialize(&argc, &argv, (char *)0, "This is a test code for the Laplace operator with a homogeneous Neumann BC!\n"));
-  PetscInt mesh[3] = {8, 8, 8}, int_args[MAX_ARGS];
+  PetscCall(SlepcInitialize(&argc, &argv, (char *)0, "This is a code for strong/weak scalability tests with a homogeneous Neumann BC!\n"));
+  PetscInt mesh[3] = {8, 8, 8}, int_args[MAX_ARGS], cr = 0, i;
   PetscBool is_petsc_default = PETSC_FALSE, b_args[MAX_ARGS];
-  PetscScalar dom[3] = {1.0, 1.0, 1.0}, fl_args[MAX_ARGS];
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-M", &mesh[0], NULL));
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-N", &mesh[1], NULL));
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-P", &mesh[2], NULL));
-  // int_args[0] = 1;
-  // PetscCall(PetscOptionsGetInt(NULL, NULL, "-os", &int_args[0], NULL));
+  PetscScalar dom[3] = {1.0, 1.0, 1.0}, fl_args[MAX_ARGS], norm_rhs;
+
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[0], NULL));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[1], NULL));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[2], NULL));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-cr", &cr, NULL));
+
   int_args[1] = 2;
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-sd", &int_args[1], NULL));
   int_args[2] = 3;
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-en_lv1", &int_args[2], NULL));
   int_args[3] = 2;
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-en_lv2", &int_args[3], NULL));
+
   fl_args[0] = -1.0;
   PetscCall(PetscOptionsGetScalar(NULL, NULL, "-eb_lv1", &fl_args[0], NULL));
   fl_args[1] = -1.0;
   PetscCall(PetscOptionsGetScalar(NULL, NULL, "-eb_lv2", &fl_args[1], NULL));
-  //   PetscCall(PetscOptionsGetInt(NULL, NULL, "-st", &st, NULL));
+
   PetscCall(PetscOptionsHasName(NULL, NULL, "-petsc_default", &is_petsc_default));
   b_args[0] = PETSC_FALSE;
   PetscCall(PetscOptionsHasName(NULL, NULL, "-use_W_cycle", &b_args[0]));
@@ -67,22 +94,25 @@ int main(int argc, char **argv) {
   PCCtx s_ctx;
   PetscCall(PC_init(&s_ctx, &dom[0], &mesh[0], &fl_args[0], &int_args[0], &b_args[0]));
   PetscCall(PC_print_info(&s_ctx));
-  // Build the system.
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Use contrast config=%d.\n", cr));
+
   PetscLogDouble main_stage[2] = {0.0, 0.0}, time_tmp;
   PetscCall(PetscTime(&time_tmp));
 
+  // Build the system.
   Vec rhs, u, r;
   Mat A;
-  PetscCall(create_Laplace_kappa(&s_ctx));
+  PetscCall(create_cross_kappa(&s_ctx, cr));
   PetscCall(PC_create_A(&s_ctx, &A));
   PetscCall(create_well_source_XxY_rhs(&s_ctx, &rhs));
+  PetscCall(VecNormalize(rhs, &norm_rhs));
 
   PetscCall(PetscTimeSubtract(&time_tmp));
   main_stage[0] -= time_tmp;
 
   // Solve the system.
   PetscCall(PetscTime(&time_tmp));
-  PetscCall(_PC_setup(&s_ctx));
+  // PetscCall(_PC_setup(&s_ctx));
   KSP ksp;
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
   PetscCall(KSPSetOperators(ksp, A, A));
@@ -92,7 +122,7 @@ int main(int argc, char **argv) {
     PetscCall(KSPGetPC(ksp, &pc));
     PetscCall(PCSetType(pc, PCSHELL));
     PetscCall(PCShellSetContext(pc, &s_ctx));
-    // PetscCall(PCShellSetSetUp(pc, PC_setup));
+    PetscCall(PCShellSetSetUp(pc, PC_setup));
     PetscCall(PCShellSetApply(pc, PC_apply_vec));
     PetscCall(PCShellSetName(pc, "3levels-MG-via-GMsFEM-with-velocity-elimination"));
   }
@@ -108,7 +138,7 @@ int main(int argc, char **argv) {
   main_stage[1] -= time_tmp;
 
   PetscInt iter_count;
-  PetscScalar residual, norm_rhs;
+  PetscScalar residual;
   PetscCall(VecDuplicate(u, &r));
   PetscCall(MatMult(A, u, r));
   PetscCall(VecAXPY(r, -1.0, rhs));
@@ -134,6 +164,8 @@ int main(int argc, char **argv) {
   PetscCall(KSPDestroy(&ksp));
   PetscCall(VecDestroy(&u));
   PetscCall(VecDestroy(&rhs));
+  for (i = 0; i < DIM; ++i)
+    PetscCall(VecDestroy(&s_ctx.kappa[i]));
   PetscCall(MatDestroy(&A));
   if (!is_petsc_default) {
     PetscCall(PC_final(&s_ctx));
