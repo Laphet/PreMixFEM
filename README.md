@@ -39,7 +39,7 @@ cat linux-oneAPI-opt/lib/petsc/conf/reconfigure-linux-oneAPI-debug.py
 #### Optimized mode in the LSSC_IV machine with oneAPI MKL MPI
 In the LSSC-IV machine (valid in Dec. 2022), try this configuration. 
 CPUs are [Intel Xeon Gold 6140] and their instruction sets contain [Intel® SSE4.2, Intel® AVX, Intel® AVX2, Intel® AVX-512].
-Note if set '-Ofast' for ifort, the compiling of Scalapack is extremely slow.
+Note if set '-Ofast' for ifort, the compiling of ScaLAPACK is extremely slow.
 The net connection is blocked, several packages need to be downloaded.
 
 module load mpi/oneapimpi-oneapi-2021.1.1
