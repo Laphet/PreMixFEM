@@ -7,14 +7,16 @@
 #define DIM 3
 #define NEIGH 6
 #define NIL 1.0e-12
-#define MAX_LOG_STATES 7
+#define MAX_LOG_STATES 9
 #define STAGE_SU_LV1 0
-#define STAGE_SU_LV2 1
-#define STAGE_SU_LV3 2
-#define STAGE_AV_LV1 3
-#define STAGE_AV_LV2 4
-#define STAGE_AV_LV3 5
-#define STAGE_AV 6
+#define STAGE_SU_LV2_1 1
+#define STAGE_SU_LV2_2 2
+#define STAGE_SU_LV3_1 3
+#define STAGE_SU_LV3_2 4
+#define STAGE_AV_LV1 5
+#define STAGE_AV_LV2 6
+#define STAGE_AV_LV3 7
+#define STAGE_AV 8
 
 typedef struct preconditioner_context {
   DM dm;

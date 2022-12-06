@@ -378,7 +378,7 @@ PetscErrorCode _PC_setup_lv2_eigen(PCCtx *s_ctx, _IntCtx *int_ctx) {
   PetscCall(DMRestoreGlobalVector(s_ctx->dm, &dummy_ms_bases_glo));
 
   PetscCall(PetscTimeSubtract(&time_tmp));
-  s_ctx->t_stages[STAGE_SU_LV2] -= time_tmp;
+  s_ctx->t_stages[STAGE_SU_LV2_1] -= time_tmp;
 
   PetscFunctionReturn(0);
 }
@@ -559,7 +559,7 @@ PetscErrorCode _PC_setup_lv2_J(PCCtx *s_ctx, _IntCtx *int_ctx) {
     PetscCall(DMDAVecRestoreArray(s_ctx->dm, s_ctx->ms_bases_c[i], &arr_ms_bases_c_array[i]));
 
   PetscCall(PetscTimeSubtract(&time_tmp));
-  s_ctx->t_stages[STAGE_SU_LV2] -= time_tmp;
+  s_ctx->t_stages[STAGE_SU_LV2_2] -= time_tmp;
 
   PetscFunctionReturn(0);
 }
@@ -806,7 +806,7 @@ PetscErrorCode _PC_setup_lv3_eigen(PCCtx *s_ctx, _IntCtx *int_ctx) {
   PetscCall(DMRestoreGlobalVector(s_ctx->dm, &dummy_ms_bases_glo));
 
   PetscCall(PetscTimeSubtract(&time_tmp));
-  s_ctx->t_stages[STAGE_SU_LV3] -= time_tmp;
+  s_ctx->t_stages[STAGE_SU_LV3_1] -= time_tmp;
 
   PetscFunctionReturn(0);
 }
@@ -1017,7 +1017,7 @@ PetscErrorCode _PC_setup_lv3_cc(PCCtx *s_ctx, _IntCtx *int_ctx) {
     PetscCall(VecDestroy(&s_ctx->ms_bases_cc[i]));
 
   PetscCall(PetscTimeSubtract(&time_tmp));
-  s_ctx->t_stages[STAGE_SU_LV3] -= time_tmp;
+  s_ctx->t_stages[STAGE_SU_LV3_2] -= time_tmp;
 
   PetscFunctionReturn(0);
 }
@@ -1230,11 +1230,11 @@ PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh, PetscScal
   PetscCheck(int_args[2] >= 1, PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Error in max_eigen_num_lv1=%d for the level-1 problem.\n", int_args[2]);
   PetscCheck(int_args[3] >= 1, PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Error in max_eigen_num_lv2=%d for the level-2 problem.\n", int_args[3]);
   if (fl_args[0] < 0.0) {
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Set a negative eigenvalue threshold (%.5f) for the level-1 problem, will use all eigenvectors (by replacing the bound with 1.0e+12).\n", fl_args[0]));
+    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Set a negative eigenvalue threshold (%.5f) for the level-1 problem, will use all eigenvectors (by replacing the bound with 1.0E+12).\n", fl_args[0]));
     fl_args[0] = 1.0 / NIL;
   }
   if (fl_args[1] < 0.0) {
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Set a negative eigenvalue threshold (%.5f) for the level-2 problem, will use all eigenvectors (by replacing the bound with 1.0e+12).\n", fl_args[1]));
+    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Set a negative eigenvalue threshold (%.5f) for the level-2 problem, will use all eigenvectors (by replacing the bound with 1.0E+12).\n", fl_args[1]));
     fl_args[1] = 1.0 / NIL;
   }
 
@@ -1298,8 +1298,8 @@ PetscErrorCode PC_print_info(PCCtx *s_ctx) {
   PetscInt m, n, p;
   PetscCall(DMDAGetInfo(s_ctx->dm, NULL, NULL, NULL, NULL, &m, &n, &p, NULL, NULL, NULL, NULL, NULL, NULL));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "MPI Processes in each direction: X=%d, Y=%d, Z=%d.\n", m, n, p));
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "max_eigen_num_lv1=%d, eigen_bd_lv1=%.5f\n", s_ctx->max_eigen_num_lv1, s_ctx->eigen_bd_lv1));
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "max_eigen_num_lv2=%d, eigen_bd_lv2=%.5f\n", s_ctx->max_eigen_num_lv2, s_ctx->eigen_bd_lv2));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "max_eigen_num_lv1=%d, eigen_bd_lv1=%.5E\n", s_ctx->max_eigen_num_lv1, s_ctx->eigen_bd_lv1));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "max_eigen_num_lv2=%d, eigen_bd_lv2=%.5E\n", s_ctx->max_eigen_num_lv2, s_ctx->eigen_bd_lv2));
   PetscFunctionReturn(0);
 }
 
@@ -1511,8 +1511,8 @@ PetscErrorCode PC_print_stat(PCCtx *s_ctx) {
 
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "eigen_max_lv1_range=[%.5E, %.5E], \teigen_min_lv1_range=[%.5E, %.5E], \teigen_num_lv1_range=[%d, %d].\n", eigen_max_lv1_range[0], eigen_max_lv1_range[1], eigen_min_lv1_range[0], eigen_min_lv1_range[1], eigen_num_lv1_range[0], eigen_num_lv1_range[1]));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "eigen_max_lv2_range=[%.5E, %.5E], \teigen_min_lv2_range=[%.5E, %.5E], \teigen_num_lv2_range=[%d, %d], \tsize_mat_lv3=%d.\n", eigen_max_lv2_range[0], eigen_max_lv2_range[1], eigen_min_lv2_range[0], eigen_min_lv2_range[1], eigen_num_lv2_range[0], eigen_num_lv2_range[1], size_mat_lv3));
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "su_lv1=[%.5f, %.5f], \tsu_lv2=[%.5f, %.5f], \tsu_lv3=[%.5f, %.5f].\n", t_stages_range[0][0], t_stages_range[0][1], t_stages_range[1][0], t_stages_range[1][1], t_stages_range[2][0], t_stages_range[2][1]));
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "av_lv1=[%.5f, %.5f], \tav_lv2=[%.5f, %.5f], \tav_lv3=[%.5f, %.5f], \tav=[%.5f, %.5f].\n", t_stages_range[3][0], t_stages_range[3][1], t_stages_range[4][0], t_stages_range[4][1], t_stages_range[5][0], t_stages_range[5][1], t_stages_range[6][0], t_stages_range[6][1]));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "su_lv1=[%.5f, %.5f], \tsu_lv2_1=[%.5f, %.5f], \tsu_lv2_2=[%.5f, %.5f], \tsu_lv3_1=[%.5f, %.5f], \tsu_lv3_2=[%.5f, %.5f].\n", t_stages_range[STAGE_SU_LV1][0], t_stages_range[STAGE_SU_LV1][1], t_stages_range[STAGE_SU_LV2_1][0], t_stages_range[STAGE_SU_LV2_1][1], t_stages_range[STAGE_SU_LV2_2][0], t_stages_range[STAGE_SU_LV2_2][1], t_stages_range[STAGE_SU_LV3_1][0], t_stages_range[STAGE_SU_LV3_1][1], t_stages_range[STAGE_SU_LV3_2][0], t_stages_range[STAGE_SU_LV3_2][1]));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "av_lv1=[%.5f, %.5f], \tav_lv2=[%.5f, %.5f], \tav_lv3=[%.5f, %.5f], \tav=[%.5f, %.5f].\n", t_stages_range[STAGE_AV_LV1][0], t_stages_range[STAGE_AV_LV1][1], t_stages_range[STAGE_AV_LV2][0], t_stages_range[STAGE_AV_LV2][1], t_stages_range[STAGE_AV_LV3][0], t_stages_range[STAGE_AV_LV3][1], t_stages_range[STAGE_AV][0], t_stages_range[STAGE_AV][1]));
 
   PetscFunctionReturn(0);
 }
