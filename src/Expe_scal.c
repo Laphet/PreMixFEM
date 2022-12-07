@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-cr", &cr, NULL));
 
   int_args[0] = 1;
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-si", &int_args[1], NULL));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-si", &int_args[0], NULL));
   int_args[1] = 2;
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-sd", &int_args[1], NULL));
   int_args[2] = 3;
