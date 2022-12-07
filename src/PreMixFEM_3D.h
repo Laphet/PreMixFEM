@@ -24,8 +24,8 @@ typedef struct preconditioner_context {
   KSP *ksp_lv1, ksp_lv2, ksp_lv3;
   PetscInt *coarse_startx, *coarse_lenx, *coarse_starty, *coarse_leny, *coarse_startz, *coarse_lenz;
   PetscInt sub_domains;
-  PetscInt max_eigen_num_lv1, max_eigen_num_lv1_upd, *eigen_num_lv1;
-  PetscInt max_eigen_num_lv2, max_eigen_num_lv2_upd, eigen_num_lv2;
+  PetscInt max_eigen_num_lv1, *eigen_num_lv1;
+  PetscInt max_eigen_num_lv2, eigen_num_lv2;
   PetscInt M, N, P;
   PetscScalar H_x, H_y, H_z, L, W, H;
   PetscScalar *eigen_max_lv1, *eigen_min_lv1, eigen_bd_lv1, eigen_max_lv2, eigen_min_lv2, eigen_bd_lv2;
