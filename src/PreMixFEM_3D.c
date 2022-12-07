@@ -190,15 +190,18 @@ PetscErrorCode _PC_setup_lv1_J(PCCtx *s_ctx, _IntCtx *int_ctx) {
     PetscCall(KSPCreate(PETSC_COMM_SELF, &(s_ctx->ksp_lv1[coarse_elem])));
     PetscCall(KSPSetOperators(s_ctx->ksp_lv1[coarse_elem], A_i, A_i));
     PetscCall(KSPSetType(s_ctx->ksp_lv1[coarse_elem], KSPPREONLY));
-    {
-      PC pc_;
-      PetscCall(KSPGetPC(s_ctx->ksp_lv1[coarse_elem], &pc_));
+    PC pc_;
+    PetscCall(KSPGetPC(s_ctx->ksp_lv1[coarse_elem], &pc_));
+    if (s_ctx->use_full_Cholesky_lv1) {
       PetscCall(PCSetType(pc_, PCCHOLESKY));
       PetscCall(PCFactorSetMatSolverType(pc_, MATSOLVERCHOLMOD));
-      PetscCall(PCSetOptionsPrefix(pc_, "kspl1_"));
-      PetscCall(KSPSetErrorIfNotConverged(s_ctx->ksp_lv1[coarse_elem], PETSC_TRUE));
-      PetscCall(PCSetFromOptions(pc_));
+    } else {
+      PetscCall(PCSetType(pc_, PCICC));
     }
+    PetscCall(PCSetOptionsPrefix(pc_, "kspl1_"));
+    PetscCall(KSPSetErrorIfNotConverged(s_ctx->ksp_lv1[coarse_elem], PETSC_TRUE));
+    PetscCall(PCSetFromOptions(pc_));
+
     PetscCall(KSPSetUp(s_ctx->ksp_lv1[coarse_elem]));
     PetscCall(MatDestroy(&A_i));
   }
@@ -1243,14 +1246,6 @@ PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh, PetscScal
   PetscCheck(int_args[1] >= 1, PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Error in sub_domains=%d.\n", int_args[1]);
   PetscCheck(int_args[2] >= 1, PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Error in max_eigen_num_lv1=%d for the level-1 problem.\n", int_args[2]);
   PetscCheck(int_args[3] >= 1, PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Error in max_eigen_num_lv2=%d for the level-2 problem.\n", int_args[3]);
-  if (fl_args[0] < 0.0) {
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Set a negative eigenvalue threshold (%.5f) for the level-1 problem, will use all eigenvectors (by replacing the bound with 1.0E+12).\n", fl_args[0]));
-    fl_args[0] = 1.0 / NIL;
-  }
-  if (fl_args[1] < 0.0) {
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Set a negative eigenvalue threshold (%.5f) for the level-2 problem, will use all eigenvectors (by replacing the bound with 1.0E+12).\n", fl_args[1]));
-    fl_args[1] = 1.0 / NIL;
-  }
 
   s_ctx->L = dom[0];
   s_ctx->W = dom[1];
@@ -1259,13 +1254,15 @@ PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh, PetscScal
   s_ctx->N = mesh[1];
   s_ctx->P = mesh[2];
 
-  s_ctx->eigen_bd_lv1 = fl_args[0];
-  s_ctx->eigen_bd_lv2 = fl_args[1];
+  s_ctx->eigen_bd_lv1 = fl_args[0] < 0.0 ? 1.0 / NIL : fl_args[0];
+  s_ctx->eigen_bd_lv2 = fl_args[1] < 0.0 ? 1.0 / NIL : fl_args[1];
+  s_ctx->smoothing_iters = int_args[0];
   s_ctx->sub_domains = int_args[1];
   s_ctx->max_eigen_num_lv1 = int_args[2];
   s_ctx->max_eigen_num_lv2 = int_args[3];
   s_ctx->use_W_cycle = b_args[0];
   s_ctx->no_shift_A_cc = b_args[1];
+  s_ctx->use_full_Cholesky_lv1 = b_args[2];
 
   s_ctx->H_x = dom[0] / (double)mesh[0];
   s_ctx->H_y = dom[1] / (double)mesh[1];
@@ -1312,6 +1309,7 @@ PetscErrorCode PC_print_info(PCCtx *s_ctx) {
   PetscInt m, n, p;
   PetscCall(DMDAGetInfo(s_ctx->dm, NULL, NULL, NULL, NULL, &m, &n, &p, NULL, NULL, NULL, NULL, NULL, NULL));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "MPI Processes in each direction: X=%d, Y=%d, Z=%d.\n", m, n, p));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "smoothing_iters=%d, sub_domains=%d\n", s_ctx->smoothing_iters, s_ctx->sub_domains));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "max_eigen_num_lv1=%d, eigen_bd_lv1=%.5E\n", s_ctx->max_eigen_num_lv1, s_ctx->eigen_bd_lv1));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "max_eigen_num_lv2=%d, eigen_bd_lv2=%.5E\n", s_ctx->max_eigen_num_lv2, s_ctx->eigen_bd_lv2));
   PetscFunctionReturn(0);
@@ -1403,6 +1401,7 @@ PetscErrorCode PC_apply_vec(PC pc, Vec x, Vec y) {
   PCCtx *s_ctx;
   Mat A;
   Vec r;
+  PetscInt i;
 
   PetscCall(PCShellGetContext(pc, &s_ctx));
   PetscCall(PCGetOperators(pc, &A, NULL));
@@ -1439,25 +1438,33 @@ PetscErrorCode PC_apply_vec(PC pc, Vec x, Vec y) {
     PetscCall(VecAYPX(r, -1, x));
     PetscCall(_PC_apply_vec_lv1(s_ctx, r, y));
   } else {
-    PetscCall(VecZeroEntries(r));
-    PetscCall(VecAYPX(r, -1, x));
-    PetscCall(_PC_apply_vec_lv1(s_ctx, r, y));
+    for (i = 0; i < s_ctx->smoothing_iters; ++i) {
+      PetscCall(MatMult(A, y, r));
+      PetscCall(VecAYPX(r, -1, x));
+      PetscCall(_PC_apply_vec_lv1(s_ctx, r, y));
+    }
 
-    PetscCall(MatMult(A, y, r));
-    PetscCall(VecAYPX(r, -1, x));
-    PetscCall(_PC_apply_vec_lv2(s_ctx, r, y));
+    for (i = 0; i < s_ctx->smoothing_iters; ++i) {
+      PetscCall(MatMult(A, y, r));
+      PetscCall(VecAYPX(r, -1, x));
+      PetscCall(_PC_apply_vec_lv2(s_ctx, r, y));
+    }
 
     PetscCall(MatMult(A, y, r));
     PetscCall(VecAYPX(r, -1, x));
     PetscCall(_PC_apply_vec_lv3(s_ctx, r, y));
 
-    PetscCall(MatMult(A, y, r));
-    PetscCall(VecAYPX(r, -1, x));
-    PetscCall(_PC_apply_vec_lv2(s_ctx, r, y));
+    for (i = 0; i < s_ctx->smoothing_iters; ++i) {
+      PetscCall(MatMult(A, y, r));
+      PetscCall(VecAYPX(r, -1, x));
+      PetscCall(_PC_apply_vec_lv2(s_ctx, r, y));
+    }
 
-    PetscCall(MatMult(A, y, r));
-    PetscCall(VecAYPX(r, -1, x));
-    PetscCall(_PC_apply_vec_lv1(s_ctx, r, y));
+    for (i = 0; i < s_ctx->smoothing_iters; ++i) {
+      PetscCall(MatMult(A, y, r));
+      PetscCall(VecAYPX(r, -1, x));
+      PetscCall(_PC_apply_vec_lv1(s_ctx, r, y));
+    }
   }
 
   PetscCall(DMRestoreGlobalVector(s_ctx->dm, &r));

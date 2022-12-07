@@ -1,6 +1,7 @@
 #include "PreMixFEM_3D.h"
 #include <petscdmda.h>
 #include <petscmath.h>
+#include <petscsystypes.h>
 #include <petscvec.h>
 #include <slepceps.h>
 
@@ -73,6 +74,8 @@ int main(int argc, char **argv) {
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[2], NULL));
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-cr", &cr, NULL));
 
+  int_args[0] = 1;
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-si", &int_args[1], NULL));
   int_args[1] = 2;
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-sd", &int_args[1], NULL));
   int_args[2] = 3;
@@ -90,6 +93,8 @@ int main(int argc, char **argv) {
   PetscCall(PetscOptionsHasName(NULL, NULL, "-use_W_cycle", &b_args[0]));
   b_args[1] = PETSC_FALSE;
   PetscCall(PetscOptionsHasName(NULL, NULL, "-no_shift_A_cc", &b_args[1]));
+  b_args[2] = PETSC_FALSE;
+  PetscCall(PetscOptionsHasName(NULL, NULL, "-use_full_Cholesky_lv1", &b_args[2]));
 
   PCCtx s_ctx;
   PetscCall(PC_init(&s_ctx, &dom[0], &mesh[0], &fl_args[0], &int_args[0], &b_args[0]));
