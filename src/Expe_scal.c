@@ -79,11 +79,11 @@ int main(int argc, char **argv) {
   int_args[1] = 1;
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-si_lv2", &int_args[1], NULL));
   int_args[2] = 2;
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-sd", &int_args[1], NULL));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-sd", &int_args[2], NULL));
   int_args[3] = 4;
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-en_lv1", &int_args[2], NULL));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-en_lv1", &int_args[3], NULL));
   int_args[4] = 4;
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-en_lv2", &int_args[3], NULL));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-en_lv2", &int_args[4], NULL));
 
   fl_args[0] = -1.0;
   PetscCall(PetscOptionsGetScalar(NULL, NULL, "-eb_lv1", &fl_args[0], NULL));
