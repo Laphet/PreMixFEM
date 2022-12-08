@@ -23,7 +23,7 @@ typedef struct preconditioner_context {
   Vec kappa[DIM], *ms_bases_c, *ms_bases_cc;
   KSP *ksp_lv1, ksp_lv2, ksp_lv3;
   PetscInt *coarse_startx, *coarse_lenx, *coarse_starty, *coarse_leny, *coarse_startz, *coarse_lenz;
-  PetscInt smoothing_iters, sub_domains;
+  PetscInt smoothing_iters_lv1, smoothing_iters_lv2, sub_domains;
   PetscInt max_eigen_num_lv1, *eigen_num_lv1;
   PetscInt max_eigen_num_lv2, eigen_num_lv2;
   PetscInt M, N, P;
