@@ -243,7 +243,7 @@ PetscErrorCode _PC_setup_lv2_eigen_r(PCCtx *s_ctx, _IntCtx *int_ctx) {
     for (ez = startz; ez < startz + nz; ++ez)
       for (ey = starty; ey < starty + ny; ++ey) {
         for (ex = startx; ex < startx + nx; ++ex) {
-          arr_M_i_3d[ez - startz][ey - starty][ex - startx] = 0.0;
+
           if (ex >= startx + 1) {
             row[0] = (ez - startz) * ny * nx + (ey - starty) * nx + ex - startx - 1;
             row[1] = (ez - startz) * ny * nx + (ey - starty) * nx + ex - startx;
@@ -289,6 +289,10 @@ PetscErrorCode _PC_setup_lv2_eigen_r(PCCtx *s_ctx, _IntCtx *int_ctx) {
     PetscCall(VecRestoreArray3d(diag_M_i, nz, ny, nx, 0, 0, 0, &arr_M_i_3d));
     // PetscCall(VecScale(diag_M_i, int_ctx->meas_elem * 0.25 * M_PI * M_PI / (nx * nx * s_ctx->H_x * s_ctx->H_x + ny * ny * s_ctx->H_y * s_ctx->H_y + nz * nz * s_ctx->H_z * s_ctx->H_z)));
     PetscCall(VecScale(diag_M_i, int_ctx->meas_elem));
+    PetscScalar vec_min;
+    PetscCall(VecMax(diag_M_i, NULL, &vec_min));
+    if (vec_min < 1.0e-9)
+      PetscCall(PetscPrintf(PETSC_COMM_SELF, "something wrong! vec_min=%.5E.\n", vec_min));
     PetscCall(MatAssemblyBegin(A_i_inner, MAT_FINAL_ASSEMBLY));
     PetscCall(MatAssemblyEnd(A_i_inner, MAT_FINAL_ASSEMBLY));
     PetscCall(MatSetOption(A_i_inner, MAT_SYMMETRIC, PETSC_TRUE));
