@@ -25,8 +25,8 @@ PetscErrorCode create_cross_kappa(PCCtx *s_ctx, PetscInt cr) {
         ex_r = ex % CELL_LEN;
         if ((ex_r >= 3 && ex_r < 5 && ey_r >= 3 && ey_r < 5) || (ex_r >= 3 && ex_r < 5 && ez_r >= 3 && ez_r < 5) || (ey_r >= 3 && ey_r < 5 && ez_r >= 3 && ez_r < 5)) {
           arr_kappa_array[0][ez][ey][ex] = PetscPowInt(10.0, cr);
-          arr_kappa_array[1][ez][ey][ex] = PetscPowInt(5.0, cr);
-          arr_kappa_array[2][ez][ey][ex] = PetscPowInt(2.0, cr);
+          arr_kappa_array[1][ez][ey][ex] = PetscPowInt(10.0, cr);
+          arr_kappa_array[2][ez][ey][ex] = PetscPowInt(10.0, cr);
         } else {
           arr_kappa_array[0][ez][ey][ex] = 1.0;
           arr_kappa_array[1][ez][ey][ex] = 1.0;

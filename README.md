@@ -36,7 +36,7 @@ Check the current configuration file.
 
 cat linux-oneAPI-opt/lib/petsc/conf/reconfigure-linux-oneAPI-debug.py 
 
-#### Optimized mode in the LSSC_IV machine with oneAPI MKL MPI
+#### Optimized mode in the LSSC_IV machine with blaslapack=[oneAPI-MKL] mpi=[oneAPI]
 In the LSSC-IV machine (valid in Dec. 2022), try this configuration. 
 CPUs are [Intel Xeon Gold 6140] and their instruction sets contain [Intel® SSE4.2, Intel® AVX, Intel® AVX2, Intel® AVX-512].
 Note if set '-Ofast' for ifort, the compiling of ScaLAPACK is extremely slow.
@@ -60,6 +60,46 @@ module load apps/mkl-oneapi-2021
 --download-hdf5=externalpackages/hdf5-1.12.1.tar.gz \
 --download-make \
 --with-packages-download-dir=externalpackages
+
+#### Optimized mode in the LSSC_IV machine with blaslapack=[oneAPI-MKL] mpi=[mvapich2]
+
+module load apps/mkl-oneapi-2021
+
+module load mpi/mvapich2-2.3.5-gcc-10.2.0
+
+./configure PETSC_ARCH=linux-MKL-mvapich2-opt --with-debugging=0 \
+--CFLAGS='-Ofast -fopenmp -march=native' \
+--FFLAGS='-Ofast -fopenmp -march=native' \
+--CXXFLAGS='-Ofast -fopenmp -march=native' \
+--with-blaslapack-dir=${MKLROOT} \
+--with-mpi-dir=${MPI_HOME} \
+--download-scalapack \
+--download-slepc \
+--download-cmake=externalpackages/cmake-3.24.2.tar.gz \
+--download-mumps \
+--download-suitesparse=externalpackages/SuiteSparse-5.13.0.tar.gz \
+--download-hdf5=externalpackages/hdf5-1.12.1.tar.gz \
+--download-make 
+
+#### Optimized mode in the LSSC_IV machine with blaslapack=[oneAPI-MKL] mpi=[openmpi]
+
+module load apps/mkl-oneapi-2021 mpi/openmpi-3.1.6-gcc-10.2.0
+
+DO NOT use: module load mpi/openmpi-4.1.0-gcc-10.2.0. It dose not pass PETSc's tests.
+
+./configure PETSC_ARCH=linux-MKL-openmpi-opt --with-debugging=0 \
+--CFLAGS='-Ofast -fopenmp -march=native' \
+--FFLAGS='-Ofast -fopenmp -march=native' \
+--CXXFLAGS='-Ofast -fopenmp -march=native' \
+--with-blaslapack-dir=${MKLROOT} \
+--with-mpi-dir=${MPI_HOME} \
+--download-scalapack=externalpackages/scalapack-2.2.0.tar.gz \
+--download-slepc \
+--download-cmake=externalpackages/cmake-3.24.2.tar.gz \
+--download-mumps \
+--download-suitesparse=externalpackages/SuiteSparse-5.13.0.tar.gz \
+--download-hdf5=externalpackages/hdf5-1.12.1.tar.gz \
+--download-make 
 
 ### Generate compile_commands.json with Bear
 I tried Bear on a simple ``HelloWorld'' project, it failed (output a empty json file) when using icc.
