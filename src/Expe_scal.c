@@ -84,6 +84,8 @@ int main(int argc, char **argv) {
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-en_lv1", &int_args[3], NULL));
   int_args[4] = 4;
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-en_lv2", &int_args[4], NULL));
+  int_args[5] = 0;
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-eg_op", &int_args[5], NULL));
 
   fl_args[0] = -1.0;
   PetscCall(PetscOptionsGetScalar(NULL, NULL, "-eb_lv1", &fl_args[0], NULL));
