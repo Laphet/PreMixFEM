@@ -65,43 +65,17 @@ PetscErrorCode create_well_source_XxY_rhs(PCCtx *s_ctx, Vec *rhs) {
 
 int main(int argc, char **argv) {
   PetscCall(SlepcInitialize(&argc, &argv, (char *)0, "This is a code for strong/weak scalability tests with a homogeneous Neumann BC!\n"));
-  PetscInt mesh[3] = {8, 8, 8}, int_args[MAX_ARGS], cr = 0, i;
-  PetscBool is_petsc_default = PETSC_FALSE, b_args[MAX_ARGS];
-  PetscScalar dom[3] = {1.0, 1.0, 1.0}, fl_args[MAX_ARGS], norm_rhs;
+  PetscInt mesh[3] = {8, 8, 8}, cr = 0, i;
+  PetscBool is_petsc_default = PETSC_FALSE;
+  PetscScalar dom[3] = {1.0, 1.0, 1.0}, norm_rhs;
 
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[0], NULL));
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[1], NULL));
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[2], NULL));
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-cr", &cr, NULL));
 
-  int_args[0] = 1;
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-si_lv1", &int_args[0], NULL));
-  int_args[1] = 1;
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-si_lv2", &int_args[1], NULL));
-  int_args[2] = 2;
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-sd", &int_args[2], NULL));
-  int_args[3] = 4;
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-en_lv1", &int_args[3], NULL));
-  int_args[4] = 4;
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-en_lv2", &int_args[4], NULL));
-  int_args[5] = 0;
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-eg_op", &int_args[5], NULL));
-
-  fl_args[0] = -1.0;
-  PetscCall(PetscOptionsGetScalar(NULL, NULL, "-eb_lv1", &fl_args[0], NULL));
-  fl_args[1] = -1.0;
-  PetscCall(PetscOptionsGetScalar(NULL, NULL, "-eb_lv2", &fl_args[1], NULL));
-
-  PetscCall(PetscOptionsHasName(NULL, NULL, "-petsc_default", &is_petsc_default));
-  b_args[0] = PETSC_FALSE;
-  PetscCall(PetscOptionsHasName(NULL, NULL, "-use_W_cycle", &b_args[0]));
-  b_args[1] = PETSC_FALSE;
-  PetscCall(PetscOptionsHasName(NULL, NULL, "-no_shift_A_cc", &b_args[1]));
-  b_args[2] = PETSC_FALSE;
-  PetscCall(PetscOptionsHasName(NULL, NULL, "-use_full_Cholesky_lv1", &b_args[2]));
-
   PCCtx s_ctx;
-  PetscCall(PC_init(&s_ctx, &dom[0], &mesh[0], &fl_args[0], &int_args[0], &b_args[0]));
+  PetscCall(PC_init(&s_ctx, &dom[0], &mesh[0]));
   PetscCall(PC_print_info(&s_ctx));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Use contrast config=%d.\n", cr));
 

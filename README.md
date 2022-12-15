@@ -120,6 +120,8 @@ The CPUs are [AMD EPYC 7452], support the instruction sets avx2, sse4_2. Refer [
 
 The net connection is blocked, all packages are needed to download manually.
 
+Do not use [-qmkl=cluster] in CFLAGS! It greatly weakens the performace!
+
 module load cmake/3.20.1 gcc/8.2.0 intel/2022.1 mpi/intel/2022.1
 
 ./configure PETSC_ARCH=linux-oneAPI-opt --with-debugging=0 \

@@ -6,8 +6,14 @@
 
 #define DIM 3
 #define NEIGH 6
+#define LEFT 1
+#define RIGHT 2
+#define DOWN 3
+#define UP 4
+#define BACK 5
+#define FRONT 6
 #define NIL 1.0e-12
-#define MAX_LOG_STATES 9
+#define MAX_LOG_STATES 10
 #define STAGE_SU_LV1 0
 #define STAGE_SU_LV2_1 1
 #define STAGE_SU_LV2_2 2
@@ -16,7 +22,9 @@
 #define STAGE_AV_LV1 5
 #define STAGE_AV_LV2 6
 #define STAGE_AV_LV3 7
-#define STAGE_AV 8
+#define STAGE_SU 8
+#define STAGE_AV 9
+
 #define EIG_OP_MOD 0
 #define EIG_OP_MEAN 1
 #define EIG_OP_DIAG 2
@@ -32,30 +40,17 @@ typedef struct preconditioner_context {
   PetscScalar H_x, H_y, H_z, L, W, H;
   PetscScalar *eigen_max_lv1, *eigen_min_lv1, eigen_bd_lv1, eigen_max_lv2, eigen_min_lv2, eigen_bd_lv2;
   PetscScalar t_stages[MAX_LOG_STATES];
-  PetscBool use_W_cycle, no_shift_A_cc, use_full_Cholesky_lv1;
+  PetscBool use_W_cycle, no_shift_A_cc, use_full_Cholesky_lv1, use_2level;
   PetscInt M, N, P;
 } PCCtx;
 
-PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh, PetscScalar *fl_args, PetscInt *int_args, PetscBool *b_args);
+PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh);
 /*
     dom[0], the length; dom[1], the width; dom[2], the height.
     mesh[0], partions in x-direction; mesh[1], partions in y-direction; mesh[2], partions in z-direction.
-    fl_args[0] > 0, the threshold of eigenvalues level1.
-    fl_args[1] > 0, the threshold of eigenvalues level2.
-    int_args[0], the number of smoothing iterations in level1.
-    int_args[1], the number of smoothing iterations in level2.
-    int_args[2], the number of subdomains in each direction.
-    int_args[3], the number of eigenvectors solved level1.
-    int_args[4], the number of eigenvectors solved level2.
-    int_args[5], the option in the s(.,.) of level2 eigenproblems: 0, mod; 1, mean; 2, diag.
-    b_args[0], use W-cycle instead of default V-cycle.
-    b_args[1], not use NIL-shift in the coarsest system.
-    b_args[2], use full Cholesky decompositions in lv1 smoothers.
 */
 
 PetscErrorCode PC_print_info(PCCtx *s_ctx);
-
-PetscErrorCode _PC_setup(PCCtx *s_ctx);
 
 PetscErrorCode PC_setup(PC pc);
 
