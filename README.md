@@ -35,16 +35,20 @@ Intel oneAPI does not have mpi-wrappered icx/icpx. Fail to use icx/icpx to compi
 Read [Quick Reference Guide to Optimization with Intel® C++ and Fortran Compilers].
 
 ./configure PETSC_ARCH=linux-oneAPI-opt --with-debugging=0 \
---CFLAGS='-diag-disable=10441 -O3 -qopenmp -qmkl' \
---FFLAGS='-O3 -qopenmp -qmkl' \
---CXXFLAGS='-diag-disable=10441 -O3 -qopenmp -qmkl' \
+--CFLAGS='-diag-disable=10441 -Ofast -qopenmp -qmkl -xhost' \
+--FFLAGS='-Ofast -qopenmp -qmkl -xhost' \
+--CXXFLAGS='-diag-disable=10441 -Ofast -qopenmp -qmkl -xhost' \
 --with-cc=mpiicc --with-fc=mpiifort --with-cxx=mpiicpc \
 --download-scalapack \
 --download-slepc \
 --download-cmake \
 --download-mumps \
 --download-suitesparse \
---download-hdf5
+--download-hdf5 \
+--download-metis \
+--download-parmetis \
+--download-superlu_dist \
+--with-mkl_cpardiso-dir=${MKLROOT} 
 
 Check the current configuration file.
 
