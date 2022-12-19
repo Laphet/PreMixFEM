@@ -49,10 +49,10 @@ endif (CXX_FLAGS)
 #  this must appear AFTER the compilers are set
 project(PreMixFEM)
 set(SOURCES 
-  src/Expe_frac.c
+  src/Expe_scal.c
   src/PreMixFEM_3D.c
 )
-SET(OUTPUT_NAME Expe_frac)
+SET(OUTPUT_NAME Expe_scal)
 add_executable(${OUTPUT_NAME} ${SOURCES})
 target_include_directories(${OUTPUT_NAME}
   PRIVATE
