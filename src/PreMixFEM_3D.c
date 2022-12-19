@@ -1110,7 +1110,7 @@ PetscErrorCode _PC_setup_lv3_eigen(PCCtx *s_ctx, _IntCtx *int_ctx) {
       find_max_eigen = PETSC_TRUE;
     }
 
-    if (j == s_ctx->max_eigen_num_lv2 - 1) {
+    if (!find_max_eigen && j == s_ctx->max_eigen_num_lv2 - 1) {
       s_ctx->eigen_num_lv2 = s_ctx->max_eigen_num_lv2;
       s_ctx->eigen_max_lv2 = eig_val;
     }

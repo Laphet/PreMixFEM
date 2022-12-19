@@ -1,6 +1,7 @@
 #include "PreMixFEM_3D.h"
 #include "petscviewerhdf5.h"
 #include <petscdmda.h>
+#include <petscsys.h>
 #include <slepceps.h>
 
 #define SAMPLE_LEN 256
@@ -63,10 +64,13 @@ PetscErrorCode create_well_source_XxY_rhs(PCCtx *s_ctx, Vec *rhs) {
 
 int main(int argc, char **argv) {
   PetscCall(SlepcInitialize(&argc, &argv, (char *)0, "This is a code for testing adaptivity on the number of eigenfunctions!\n"));
-  PetscInt mesh[3] = {8, 8, 8}, cr = 0, i;
+  PetscInt mesh[3] = {512, 512, 512}, cr = 0, i;
   PetscBool is_petsc_default = PETSC_FALSE;
   PetscScalar dom[3] = {1.0, 1.0, 1.0}, norm_rhs;
 
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[0], NULL));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[1], NULL));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[2], NULL));
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-cr", &cr, NULL));
   PCCtx s_ctx;
   PetscCall(PC_init(&s_ctx, &dom[0], &mesh[0]));
@@ -87,6 +91,7 @@ int main(int argc, char **argv) {
   PetscObjectSetName((PetscObject)frac_kappa, "frac");
   PetscCall(VecLoad(frac_kappa, reader));
   PetscCall(PetscViewerDestroy(&reader));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Successfully load the data!\n"));
 
   PetscCall(VecGetArray3d(frac_kappa, SAMPLE_LEN, SAMPLE_LEN, SAMPLE_LEN, 0, 0, 0, &arr_frac_kappa));
   PetscCall(create_fracture_kappa(&s_ctx, cr, arr_frac_kappa));
