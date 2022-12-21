@@ -1,6 +1,7 @@
 #include "PreMixFEM_3D.h"
 #include "petscviewerhdf5.h"
 #include <petscdmda.h>
+#include <petscoptions.h>
 #include <petscsys.h>
 #include <slepceps.h>
 
@@ -72,6 +73,7 @@ int main(int argc, char **argv) {
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[1], NULL));
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[2], NULL));
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-cr", &cr, NULL));
+  PetscCall(PetscOptionsHasName(NULL, NULL, "-petsc_default", &is_petsc_default));
   PCCtx s_ctx;
   PetscCall(PC_init(&s_ctx, &dom[0], &mesh[0]));
   PetscCall(PC_print_info(&s_ctx));

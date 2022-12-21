@@ -72,6 +72,7 @@ int main(int argc, char **argv) {
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[0], NULL));
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[1], NULL));
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-size", &mesh[2], NULL));
+  PetscCall(PetscOptionsHasName(NULL, NULL, "-petsc_default", &is_petsc_default));
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-cr", &cr, NULL));
 
   PCCtx s_ctx;
