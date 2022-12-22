@@ -899,7 +899,7 @@ PetscErrorCode _PC_setup_lv2_J(PCCtx *s_ctx, _IntCtx *int_ctx) {
     PC pc_;
     PetscCall(KSPGetPC(s_ctx->ksp_lv2, &pc_));
     PetscCall(PCSetType(pc_, PCCHOLESKY));
-    PetscCall(PCFactorSetMatSolverType(pc_, MATSOLVERCHOLMOD));
+    PetscCall(PCFactorSetMatSolverType(pc_, MATSOLVERMUMPS));
     PetscCall(PCSetOptionsPrefix(pc_, "kspl2_"));
     PetscCall(KSPSetErrorIfNotConverged(s_ctx->ksp_lv2, PETSC_TRUE));
     PetscCall(PCSetFromOptions(pc_));
