@@ -1,6 +1,6 @@
 #
 #  This is a sample CMakeLists.txt suitable for direct use with a new PETSc application or
-#  you can add fragments of material below to an existing applications CMakeLists.txt
+#  you can add fragments of material below to an existing application CMakeLists.txt
 #
 #  Usage:  To build ex1 from ex1.c
 #    rm -fr build
@@ -18,7 +18,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # Use verbose output.
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-# set root of location to find PETSc's pkg-config
+# set the root location to find PETSc's pkg-config
 # set(ENV{PETSC_DIR} "/home/cqye/petsc")
 # set(ENV{PETSC_ARCH} "linux-gcc-debug")
 set(PETSC $ENV{PETSC_DIR}/$ENV{PETSC_ARCH})
@@ -49,10 +49,10 @@ endif (CXX_FLAGS)
 #  this must appear AFTER the compilers are set
 project(PreMixFEM)
 set(SOURCES 
-  src/Expe_scal.c
   src/PreMixFEM_3D.c
+  src/Expe_frac.c
 )
-SET(OUTPUT_NAME Expe_scal)
+SET(OUTPUT_NAME Expe_frac)
 add_executable(${OUTPUT_NAME} ${SOURCES})
 target_include_directories(${OUTPUT_NAME}
   PRIVATE

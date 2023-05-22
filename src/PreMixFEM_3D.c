@@ -337,11 +337,10 @@ PetscErrorCode _PC_setup_lv2_eigen(PCCtx *s_ctx, _IntCtx *int_ctx) {
     PetscCall(MatAssemblyBegin(A_i_inner, MAT_FINAL_ASSEMBLY));
     PetscCall(MatAssemblyEnd(A_i_inner, MAT_FINAL_ASSEMBLY));
     PetscCall(MatSetOption(A_i_inner, MAT_SYMMETRIC, PETSC_TRUE));
-
+    PetscCall(VecRestoreArray3d(diag_M_i, nz, ny, nx, 0, 0, 0, &arr_M_i_3d));
     // PetscCall(VecScale(diag_M_i, int_ctx->meas_elem * 0.25 * M_PI * M_PI / (nx * nx * s_ctx->H_x * s_ctx->H_x + ny * ny * s_ctx->H_y * s_ctx->H_y + nz * nz * s_ctx->H_z * s_ctx->H_z)));
     if (s_ctx->lv2_eigen_op == EIG_OP_MOD)
       PetscCall(VecScale(diag_M_i, int_ctx->meas_elem));
-    PetscCall(VecRestoreArray3d(diag_M_i, nz, ny, nx, 0, 0, 0, &arr_M_i_3d));
     PetscCall(MatDiagonalSet(M_i, diag_M_i, INSERT_VALUES));
     PetscCall(MatAssemblyBegin(M_i, MAT_FINAL_ASSEMBLY));
     PetscCall(MatAssemblyEnd(M_i, MAT_FINAL_ASSEMBLY));
@@ -1677,6 +1676,7 @@ PetscErrorCode PC_init(PCCtx *s_ctx, PetscScalar *dom, PetscInt *mesh) {
   PetscCheck(s_ctx->max_eigen_num_lv1 >= 1, PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Error in max_eigen_num_lv1=%d for the level-1 problem.\n", s_ctx->max_eigen_num_lv1);
 
   s_ctx->max_eigen_num_lv2 = 4;
+  s_ctx->eigen_num_lv2 = 4;
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-en_lv2", &s_ctx->max_eigen_num_lv2, NULL));
   PetscCheck(s_ctx->max_eigen_num_lv2 >= 1, PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Error in max_eigen_num_lv2=%d for the level-2 problem.\n", s_ctx->max_eigen_num_lv2);
 
